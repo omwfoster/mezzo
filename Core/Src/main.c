@@ -20,6 +20,16 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4_discovery.h"
+#include "stm32f4_discovery_audio.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <arm_math.h>
+
+
+#define FFT_LEN 128
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -28,6 +38,59 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+SPI_HandleTypeDef hspi1;
+
+I2S_HandleTypeDef hAudioInI2s;
+I2C_HandleTypeDef SSD1306_I2C_PORT;
+
+static volatile uint32_t ITCounter = 0; //  buffer position for use in isr
+static volatile uint16_t buff_pos = 0;  // pointer to buffer position
+
+float32_t F_Sum = 0.0f;  // cmsis support function variables
+float32_t max_Value = 0.0;
+uint32_t max_Index = 0;
+float32_t st_dev;
+float32_t st_max = 63566;
+float32_t st_min = 0;
+
+/* Save MEMS ID */
+uint8_t MemsID = 0;
+/* Buffer Status variables */
+
+volatile uint8_t AUDIODataReady = 0, FFT_Ready = 0, LED_Ready = 0, PDM_Running =
+		0;
+
+arm_rfft_fast_instance_f32 rfft_s;
+
+/* Width of the peak */
+static float32_t peq1_width = 5.0f;
+static float32_t peq1_coeffsA[5] = { 1.0, -1.0, 0, 0.95, 0 };
+
+static float32_t peq1_state[2];
+static bool peq1_abFlag = false;
+/* Two filter instances so we can use one while calculating the coefficients of the other */
+static const arm_biquad_casd_df1_inst_f32 peq1_instanceA = { 1, peq1_state,
+		peq1_coeffsA };
+
+static const uint16_t SAMPLE_RUNS = 32; //(INTERNAL_BUFF_SIZE / PCM_OUT_SIZE);
+
+float32_t fft_input_array[FFT_LEN]; //
+float32_t fft_temp_array[FFT_LEN]; //
+float32_t fft_output_bins[FFT_LEN];
+float32_t mag_output_bins[FFT_LEN / 2]; //
+float32_t db_output_bins[FFT_LEN / 2]; //
+
+//chunk_TypeDef sine_test;
+
+// hanning windowing functions for sample blocks.
+float32_t array_window[FFT_LEN];
+float32_t hann_buff[FFT_LEN];
+
+// sample data
+uint16_t internal_buffer[INTERNAL_BUFF_SIZE]; // read raw pdm input    128 * DEFAULT_AUDIO_IN_FREQ/16000 *DEFAULT_AUDIO_IN_CHANNEL_NBR
+uint16_t PCM_Buf[PCM_OUT_SIZE]; //PCM stereo samples are saved in RecBuf  DEFAULT_AUDIO_IN_FREQ/1000
+float32_t float_array[PCM_OUT_SIZE];
 
 /* USER CODE END PTD */
 
@@ -102,6 +165,11 @@ static void MX_I2C2_Init(void) {
 		Error_Handler();
 	}
 
+}
+
+
+void I2S2_IRQHandler(void) {
+	HAL_DMA_IRQHandler(hAudioInI2s.hdmarx);
 }
 
 /* USER CODE END PFP */
@@ -195,6 +263,63 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
+
+void PCM_to_Float(uint16_t *samples_PCM, float32_t *samples_float32,
+		uint16_t length_array) {
+
+	for (uint16_t i = 0; i < length_array; i++) {
+		samples_float32[i] = (float32_t) samples_PCM[i];
+	}
+
+}
+
+void BSP_AUDIO_IN_TransferComplete_CallBack(void) {
+
+	if (AUDIODataReady == 0) {
+		buff_pos = ITCounter * PCM_OUT_SIZE;
+		BSP_AUDIO_IN_PDMToPCM(
+				(uint16_t *) &internal_buffer[INTERNAL_BUFF_SIZE / 2],
+				(uint16_t *) &PCM_Buf[0]);
+
+		PCM_to_Float((uint16_t *) &PCM_Buf[0], (float32_t *) &float_array[0],
+		PCM_OUT_SIZE);
+		arm_mult_f32(&float_array[0], &array_window[buff_pos],
+				&fft_input_array[buff_pos], PCM_OUT_SIZE);
+
+		if (ITCounter < (SAMPLE_RUNS - 1)) {
+			ITCounter++;
+
+		} else {
+			AUDIODataReady = 1;
+			ITCounter = 0;
+
+		}
+	}
+}
+
+void BSP_AUDIO_IN_HalfTransfer_CallBack(void) {
+	if (AUDIODataReady == 0) {
+		buff_pos = ITCounter * PCM_OUT_SIZE;
+		/* PDM to PCM data convert */
+		BSP_AUDIO_IN_PDMToPCM((uint16_t *) &internal_buffer[0],
+				(uint16_t *) &PCM_Buf[0]);
+		PCM_to_Float((uint16_t *) &PCM_Buf[0], (float32_t *) &float_array[0],
+		PCM_OUT_SIZE);
+		arm_mult_f32(&float_array[0], &array_window[buff_pos],
+				&fft_input_array[buff_pos], PCM_OUT_SIZE);
+
+		if (ITCounter < (SAMPLE_RUNS - 1)) {
+			ITCounter++;
+
+		} else {
+			AUDIODataReady = 1;
+			ITCounter = 0;
+
+		}
+	}
+}
 
 /* USER CODE END 4 */
 
