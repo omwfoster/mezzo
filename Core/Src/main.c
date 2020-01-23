@@ -19,17 +19,26 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4_discovery.h"
-#include "stm32f4_discovery_audio.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <arm_math.h>
+#include "main.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4_discovery.h"
+#include "stm32f4_discovery_audio.h"
+
+#include "omwof/omwof_test.h"
+#include "omwof/omwof_weight.h"
+#include "omwof/omwof_window.h"
+#include "omwof/omwof_menu.h"
+#include "omwof/omwof_button.h"
+#include "omwof/omwof_db.h"
 
 
-#define FFT_LEN 128
+
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -40,6 +49,9 @@
 /* USER CODE BEGIN PTD */
 
 SPI_HandleTypeDef hspi1;
+
+I2C_HandleTypeDef hi2c1;
+I2S_HandleTypeDef hi2s3;
 
 I2S_HandleTypeDef hAudioInI2s;
 I2C_HandleTypeDef SSD1306_I2C_PORT;
@@ -113,6 +125,24 @@ float32_t float_array[PCM_OUT_SIZE];
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
+
+void set_window() {
+	toplevel_menu[2]->active_callback->callback_ptr.func_window(&array_window[0], FFT_LEN);
+
+}
+
+
+
+void enablefpu() {
+	__asm volatile(
+			"  ldr.w r0, =0xE000ED88    \n" /* The FPU enable bits are in the CPACR. */
+			"  ldr r1, [r0]             \n" /* read CAPCR */
+			"  orr r1, r1, #( 0xf <<20 )\n" /* Set bits 20-23 to enable CP10 and CP11 coprocessors */
+			"  str r1, [r0]              \n" /* Write back the modified value to the CPACR */
+			"  dsb                       \n" /* wait for store to complete */
+			"  isb" /* reset pipeline now the FPU is enabled */);
+}
+
 TIM_HandleTypeDef TIM_Handle;
 
 uint8_t TIM4_config(void)
@@ -147,8 +177,6 @@ void TIM4_IRQHandler(void)
 }
 
 
-I2C_HandleTypeDef hi2c1;
-
 static void MX_I2C2_Init(void) {
 
 
@@ -168,6 +196,16 @@ static void MX_I2C2_Init(void) {
 }
 
 
+
+static void MX_GPIO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+
+	__HAL_RCC_GPIOB_CLK_ENABLE()
+	;
+
+}
+
+
 void I2S2_IRQHandler(void) {
 	HAL_DMA_IRQHandler(hAudioInI2s.hdmarx);
 }
@@ -178,6 +216,21 @@ void I2S2_IRQHandler(void) {
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
+
+
+void init() {
+
+	enablefpu();
+	HAL_Init();
+	MX_GPIO_Init();
+	MX_I2C2_Init();
+//	ssd1306_Init();
+//	cleanbuffers();
+//	add_ui();
+//  ssd1306_TestAll();
+//	fft_ws2812_Init();
+//	init_button();
+}
 
 /**
   * @brief  The application entry point.
@@ -193,7 +246,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  init();
 
   /* USER CODE BEGIN Init */
 
@@ -321,19 +374,8 @@ void BSP_AUDIO_IN_HalfTransfer_CallBack(void) {
 	}
 }
 
-/* USER CODE END 4 */
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-
-  /* USER CODE END Error_Handler_Debug */
-}
+void Error_Handler()
+{};
 
 #ifdef  USE_FULL_ASSERT
 /**

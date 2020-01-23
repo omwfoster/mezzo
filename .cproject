@@ -61,6 +61,11 @@
 									<listOptionValue builtIn="false" value="../Drivers/Components/cs43l22"/>
 									<listOptionValue builtIn="false" value="../Drivers/Components/lis302dl"/>
 									<listOptionValue builtIn="false" value="../Drivers/Components/lis3dsh"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/board_stupid/Core/Src/omwof}&quot;"/>
+									<listOptionValue builtIn="false" value="/board_stupid/Core/Src/ssd1306"/>
+									<listOptionValue builtIn="false" value="/board_stupid/Core/Src/ws2812b"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/board_stupid/Core/Inc/omwof}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/board_stupid/Core/Inc/ssd1306}&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includefiles.63774001" name="Include files (-include)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includefiles" useByScannerDiscovery="false" valueType="includeFiles"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.916226304" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
@@ -144,6 +149,9 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F4xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/board_stupid/Core/Src/omwof}&quot;"/>
+									<listOptionValue builtIn="false" value="/board_stupid/Core/Src/ssd1306"/>
+									<listOptionValue builtIn="false" value="/board_stupid/Core/Src/ws2812b"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.75899342" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -194,5 +202,13 @@
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/board_stupid"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/board_stupid"/>
+		</configuration>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
