@@ -29,6 +29,8 @@
 #include "stm32f4_discovery.h"
 #include "stm32f4_discovery_audio.h"
 
+#include "visEffect.h"
+
 #include "omwof/omwof_test.h"
 #include "omwof/omwof_weight.h"
 #include "omwof/omwof_window.h"
@@ -126,6 +128,54 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 
+#define UDG	0
+
+extern menu_typedef * toplevel_menu[3];
+
+
+void add_ui() {
+
+	static callback_typedef power_list[] = {
+			{.callback_ptr = (typedef_func_union ) &power_spectra , .callback_name = "power1",},
+			{.callback_ptr = (typedef_func_union ) &power_spectra1  , .callback_name = "power2",},
+			{.callback_ptr = (typedef_func_union ) &power_spectra2 , .callback_name = "power3",},
+			{.callback_ptr = (typedef_func_union ) &power_spectra3  , .callback_name = "power4",},
+			{.callback_ptr = (typedef_func_union ) &power_spectra4  , .callback_name = "power5",},
+
+	};
+
+	add_new_menu(&power_list[0],5,"Powers",0,POWER_FOLDER);
+
+	static callback_typedef weight_list[] = {
+			{.callback_ptr = (typedef_func_union ) &rms_weighting , .callback_name = "bad_rms_1",},
+			{.callback_ptr = (typedef_func_union ) &rms_weighting_2 , .callback_name = "good_rms_2",},
+			{.callback_ptr = (typedef_func_union ) &sd_weighting , .callback_name = "sd_1",},
+			{.callback_ptr = (typedef_func_union ) &sd_weighting_2 , .callback_name = "sd_2",},
+		};
+
+		add_new_menu(&weight_list[0],4,"Weights",1,WEIGHT_FOLDER);
+
+	static callback_typedef window_list[] = {
+			{.callback_ptr = (typedef_func_union)&Hanning , .callback_name = "Hanning",},
+			{.callback_ptr = (typedef_func_union)&Hamming , .callback_name = "Hamming",},
+			{.callback_ptr = (typedef_func_union)&Blackman , .callback_name = "Blackman",},
+			{.callback_ptr = (typedef_func_union)&Kaiser , .callback_name = "Kaiser",},
+			{.callback_ptr = (typedef_func_union)&Chebeyshev , .callback_name = "Chebayshev",},
+
+	};
+
+	add_new_menu(&window_list[0],5,"Windows",2,WINDOW_FOLDER);
+
+
+
+
+
+
+}
+
+
+
+
 void set_window() {
 	toplevel_menu[2]->active_callback->callback_ptr.func_window(&array_window[0], FFT_LEN);
 
@@ -206,10 +256,30 @@ static void MX_GPIO_Init(void) {
 }
 
 
+
+
 void I2S2_IRQHandler(void) {
 	HAL_DMA_IRQHandler(hAudioInI2s.hdmarx);
 }
 
+
+void BSP_Audio_init() {
+
+	BSP_AUDIO_IN_Init(DEFAULT_AUDIO_IN_FREQ,
+	DEFAULT_AUDIO_IN_BIT_RESOLUTION,
+	DEFAULT_AUDIO_IN_CHANNEL_NBR);
+	BSP_AUDIO_IN_Record((uint16_t *) &internal_buffer[0],
+	INTERNAL_BUFF_SIZE); // start reading pdm data into buffer
+
+}
+
+void fft_ws2812_Init() {
+	set_window(&array_window[0],FFT_LEN);
+	arm_rfft_fast_init_f32(&rfft_s, FFT_LEN);
+	AUDIODataReady = 0;
+	BSP_Audio_init();
+	visInit();
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -224,11 +294,11 @@ void init() {
 	HAL_Init();
 	MX_GPIO_Init();
 	MX_I2C2_Init();
-//	ssd1306_Init();
+	ssd1306_Init();
 //	cleanbuffers();
-//	add_ui();
+	add_ui();
 //  ssd1306_TestAll();
-//	fft_ws2812_Init();
+	fft_ws2812_Init();
 //	init_button();
 }
 
