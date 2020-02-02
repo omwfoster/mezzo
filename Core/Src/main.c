@@ -16,9 +16,6 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-
-/* Includes ------------------------------------------------------------------*/
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -39,16 +36,6 @@
 #include "omwof/omwof_db.h"
 
 
-
-
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
 
 SPI_HandleTypeDef hspi1;
 
@@ -77,17 +64,8 @@ volatile uint8_t AUDIODataReady = 0, FFT_Ready = 0, LED_Ready = 0, PDM_Running =
 
 arm_rfft_fast_instance_f32 rfft_s;
 
-/* Width of the peak */
-static float32_t peq1_width = 5.0f;
-static float32_t peq1_coeffsA[5] = { 1.0, -1.0, 0, 0.95, 0 };
 
-static float32_t peq1_state[2];
-static bool peq1_abFlag = false;
-/* Two filter instances so we can use one while calculating the coefficients of the other */
-static const arm_biquad_casd_df1_inst_f32 peq1_instanceA = { 1, peq1_state,
-		peq1_coeffsA };
-
-static const uint16_t SAMPLE_RUNS = 32; //(INTERNAL_BUFF_SIZE / PCM_OUT_SIZE);
+static const uint16_t SAMPLE_RUNS = 64; //(INTERNAL_BUFF_SIZE / PCM_OUT_SIZE);
 
 float32_t fft_input_array[FFT_LEN]; //
 float32_t fft_temp_array[FFT_LEN]; //
@@ -106,22 +84,7 @@ uint16_t internal_buffer[INTERNAL_BUFF_SIZE]; // read raw pdm input    128 * DEF
 uint16_t PCM_Buf[PCM_OUT_SIZE]; //PCM stereo samples are saved in RecBuf  DEFAULT_AUDIO_IN_FREQ/1000
 float32_t float_array[PCM_OUT_SIZE];
 
-/* USER CODE END PTD */
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -133,7 +96,7 @@ void SystemClock_Config(void);
 extern menu_typedef * toplevel_menu[3];
 
 
-void add_ui() {
+void add_menu_options() {
 
 	static callback_typedef power_list[] = {
 			{.callback_ptr = (typedef_func_union ) &power_spectra , .callback_name = "power1",},
@@ -161,26 +124,15 @@ void add_ui() {
 			{.callback_ptr = (typedef_func_union)&Blackman , .callback_name = "Blackman",},
 			{.callback_ptr = (typedef_func_union)&Kaiser , .callback_name = "Kaiser",},
 			{.callback_ptr = (typedef_func_union)&Chebeyshev , .callback_name = "Chebayshev",},
-
 	};
-
 	add_new_menu(&window_list[0],5,"Windows",2,WINDOW_FOLDER);
-
-
-
-
-
-
 }
-
-
 
 
 void set_window() {
 	toplevel_menu[2]->active_callback->callback_ptr.func_window(&array_window[0], FFT_LEN);
 
 }
-
 
 
 void enablefpu() {
@@ -221,7 +173,7 @@ void TIM4_IRQHandler(void)
 		if (__HAL_TIM_GET_ITSTATUS(&TIM_Handle, TIM_IT_UPDATE) != RESET) {
 			__HAL_TIM_CLEAR_FLAG(&TIM_Handle, TIM_FLAG_UPDATE);
 
-	//		ws2812b_handle();
+			ws2812b_handle();
 		}
 	}
 }
@@ -294,9 +246,9 @@ void init() {
 	HAL_Init();
 	MX_GPIO_Init();
 	MX_I2C2_Init();
-	ssd1306_Init();
+//	ssd1306_Init();
 //	cleanbuffers();
-	add_ui();
+	add_menu_options();
 //  ssd1306_TestAll();
 	fft_ws2812_Init();
 //	init_button();
@@ -306,45 +258,54 @@ void init() {
   * @brief  The application entry point.
   * @retval int
   */
+float32_t max_db;
+float32_t min_db;
+
+uint8_t StartRFFTTask() {
+
+	arm_rfft_fast_f32(&rfft_s, &fft_input_array[0], &fft_output_bins[0], 0);
+	arm_cmplx_mag_f32(&fft_output_bins[0], &mag_output_bins[0], (FFT_LEN / 2));
+	toplevel_menu[0]->active_callback->callback_ptr.func_power(
+			&mag_output_bins[0], &db_output_bins[0], (FFT_LEN / 2));
+	arm_fill_f32(0.0f, &fft_input_array[0], FFT_LEN);
+	FFT_Ready = 1;
+	return 1;
+
+}
+
+
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-  
+		SystemClock_Config();
+		init();
+		TIM4_config(); // timer for LED refresh
+		BSP_AUDIO_IN_SetVolume(64);
 
-  /* MCU Configuration--------------------------------------------------------*/
+		float32_t weight = 0.0f;
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  init();
+		while (1) {
 
-  /* USER CODE BEGIN Init */
+			if ((AUDIODataReady == 1 && FFT_Ready == 0)) {
+				StartRFFTTask();   // test if duration variable is overwritten
+			}
 
-  /* USER CODE END Init */
+			if ((FFT_Ready == 1) && (LED_Ready == 0)) {
+				weight = toplevel_menu[1]
+									   ->active_callback
+									   ->callback_ptr.func_weight(&mag_output_bins[0], (FFT_LEN / 2), &st_dev);
 
-  /* Configure the system clock */
-  SystemClock_Config();
+				generate_RGB(&fft_output_bins[0], &mag_output_bins[0],
+						&db_output_bins[0], (FFT_LEN / 2), weight);
+				LED_Ready = generate_BB();
+			}
+			if (get_BB_status(BB_TRANSFER_COMPLETE) == 1) {
+				LED_Ready = 0;
+				FFT_Ready = 0;
+				AUDIODataReady = 0;
+			}
+		}
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
- 
- 
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
 }
 
 /**

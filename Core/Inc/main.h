@@ -146,6 +146,8 @@ void calc_mag_output(float32_t *, float32_t *, uint16_t);
 void drop_volume();
 void set_window();
 void cleanbuffers();
+void BSP_Audio_init();
+
 
 
 
