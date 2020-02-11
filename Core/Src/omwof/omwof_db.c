@@ -58,9 +58,7 @@ volatile float32_t dynamic_range_min = 63555.0f;
 
 void mag2db(float32_t *array, float32_t *db_array, uint32_t array_len) {
 
-	static volatile float32_t u;
-	static volatile float32_t arm_max_result = 0.0f;
-	static float32_t arm_min_result = 63555.0f;
+
 
 	arm_abs_f32(array, db_array, array_len);
 

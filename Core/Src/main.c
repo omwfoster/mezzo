@@ -65,13 +65,15 @@ volatile uint8_t AUDIODataReady = 0, FFT_Ready = 0, LED_Ready = 0, PDM_Running =
 arm_rfft_fast_instance_f32 rfft_s;
 
 
-static const uint16_t SAMPLE_RUNS = 64; //(INTERNAL_BUFF_SIZE / PCM_OUT_SIZE);
+
 
 float32_t fft_input_array[FFT_LEN]; //
 float32_t fft_temp_array[FFT_LEN]; //
 float32_t fft_output_bins[FFT_LEN];
 float32_t mag_output_bins[FFT_LEN / 2]; //
 float32_t db_output_bins[FFT_LEN / 2]; //
+
+#define SAMPLE_RUNS FFT_LEN / INTERNAL_BUFF_SIZE
 
 //chunk_TypeDef sine_test;
 
@@ -145,6 +147,9 @@ void enablefpu() {
 			"  isb" /* reset pipeline now the FPU is enabled */);
 }
 
+
+// LED output scheduling definitions
+
 TIM_HandleTypeDef TIM_Handle;
 
 uint8_t TIM4_config(void)
@@ -164,6 +169,9 @@ uint8_t TIM4_config(void)
 
 }
 
+
+
+// LED output timing callback
 
 void TIM4_IRQHandler(void)
 
@@ -200,6 +208,7 @@ static void MX_I2C2_Init(void) {
 
 
 static void MX_GPIO_Init(void) {
+
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
 	__HAL_RCC_GPIOB_CLK_ENABLE()
@@ -232,12 +241,6 @@ void fft_ws2812_Init() {
 	BSP_Audio_init();
 	visInit();
 }
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 
 void init() {
@@ -246,12 +249,10 @@ void init() {
 	HAL_Init();
 	MX_GPIO_Init();
 	MX_I2C2_Init();
-//	ssd1306_Init();
-//	cleanbuffers();
 	add_menu_options();
 //  ssd1306_TestAll();
 	fft_ws2812_Init();
-//	init_button();
+//	init_button();  // TODO: change gpio definitions for button for f466 mezzanine
 }
 
 /**
@@ -346,9 +347,7 @@ void SystemClock_Config(void)
   }
 }
 
-/* USER CODE BEGIN 4 */
-
-
+// convert 16 bit pcm samples to cmsis 32 bit floating point values
 
 void PCM_to_Float(uint16_t *samples_PCM, float32_t *samples_float32,
 		uint16_t length_array) {
@@ -358,6 +357,9 @@ void PCM_to_Float(uint16_t *samples_PCM, float32_t *samples_float32,
 	}
 
 }
+
+// pdm microphone functions and callbacks taken from disco f407 examples
+// pdm2pcm_glo library also borrowed
 
 void BSP_AUDIO_IN_TransferComplete_CallBack(void) {
 
@@ -369,6 +371,9 @@ void BSP_AUDIO_IN_TransferComplete_CallBack(void) {
 
 		PCM_to_Float((uint16_t *) &PCM_Buf[0], (float32_t *) &float_array[0],
 		PCM_OUT_SIZE);
+
+		// apply current designated window to sampled data.
+		// default hanning window
 		arm_mult_f32(&float_array[0], &array_window[buff_pos],
 				&fft_input_array[buff_pos], PCM_OUT_SIZE);
 

@@ -28,7 +28,7 @@ void Hamming(float32_t * output_array, uint32_t N) {
 
 	arm_fill_f32(0.0f, output_array, N);
 
-	for (i = 0; i < N; i++) { //CALC_HANNING   Calculates Hanning window samples.
+	for (i = 0; i < N; i++) { // Hamming
 		*output_array = 0.54 - 0.46 * (1 - cos(2 * PI * (i + 1) / (N + 1)));
 		++output_array;
 	}
@@ -40,7 +40,7 @@ void Blackman(float32_t * output_array, uint32_t N) {
 
 	arm_fill_f32(0.0f, output_array, N);
 
-	for (i = 0; i < N; i++) { //CALC_HANNING   Calculates Hanning window samples.
+	for (i = 0; i < N; i++) { //Blackman
 		*output_array = 0.42 - 0.5 * (1 - cos(2 * PI * (i + 1) / (N + 1)))
 				+ 0.08 * (1 - cos(2 * PI * (i + 1) * 2 / (N + 1)));
 		++output_array;
@@ -53,7 +53,7 @@ void Kaiser(float32_t * output_array, uint32_t N) {
 
 	arm_fill_f32(0.0f, output_array, N);
 
-	for (i = 0; i < N; i++) { //CALC_HANNING   Calculates Hanning window samples.
+	for (i = 0; i < N; i++) { //Kaiser
 		*output_array = 0.5 * (1 - cos(2 * PI * (i + 1) / (N + 1)));
 		++output_array;
 	}
@@ -65,7 +65,7 @@ void Chebeyshev(float32_t * output_array, uint32_t N) {
 
 	arm_fill_f32(0.0f, output_array, N);
 
-	for (i = 0; i < N; i++) { //CALC_HANNING   Calculates Hanning window samples.
+	for (i = 0; i < N; i++) { //Chebeyshev
 		*output_array = 0.5 * (1 - cos(2 * PI * (i + 1) / (N + 1)));
 		++output_array;
 	}
