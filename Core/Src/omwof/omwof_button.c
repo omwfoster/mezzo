@@ -5,11 +5,11 @@
  *      Author: oli
  */
 
-#include <omwof_button.h>
-#include <omwof_menu.h>
-#include <omwof_window.h>
-#include <omwof_weight.h>
-#include <ssd1306.h>
+#include <omwof/omwof_button.h>
+#include <omwof/omwof_menu.h>
+#include <omwof/omwof_window.h>
+#include <omwof/omwof_weight.h>
+#include <ssd1306/ssd1306.h>
 
 typedef enum button_state {
 	NOT_IN_USE, BUTTON_PRESSED, BUTTON_RELEASED

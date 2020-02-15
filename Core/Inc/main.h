@@ -19,8 +19,8 @@
 #include "omwof/omwof_weight.h"
 #include "omwof/omwof_irq.h"
 #include "omwof/omwof_lcd.h"
-#include "ssd1306.h"
-#include "ssd1306_tests.h"
+#include "ssd1306/ssd1306.h"
+#include "ssd1306/ssd1306_tests.h"
 
 
 #define I2C1_OPEN
