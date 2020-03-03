@@ -38,15 +38,15 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "../ST3dPrinter/stm32f4xx_3dprinter_misc.h"
+#include "stm32f4xx_3dprinter_misc.h"
 
 #include "motorcontrol.h"
 #include "l6474.h"
 #include "string.h"
 #include <stdio.h>
-#include "../ST3dPrinter/stm32f4xx_3dprinter_adc.h"
-#include "../ST3dPrinter/stm32f4xx_3dprinter_motor.h"
-#include "../ST3dPrinter/stm32f4xx_3dprinter_uart.h"
+#include "stm32f4xx_3dprinter_adc.h"
+#include "stm32f4xx_3dprinter_motor.h"
+#include "stm32f4xx_3dprinter_uart.h"
 
 /* Private defines ----------------------------------------------------------*/
 #define HEAT_TIMER_PRESCALER  (1024)
